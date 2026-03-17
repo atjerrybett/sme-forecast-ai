@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 import { useProtectedRoute } from '@/lib/useProtectedRoute';
 import { supabase } from '@/lib/supabase';
 
@@ -52,23 +53,24 @@ export default function UploadPage() {
 
   const handleFile = (selectedFile: File) => {
     if (!selectedFile.name.endsWith('.csv')) {
-      setError('Please upload a CSV file');
+      toast.error('Please upload a CSV file');
       return;
     }
 
     if (selectedFile.size > 10 * 1024 * 1024) {
-      setError('File size must be less than 10MB');
+      toast.error('File size must be less than 10MB');
       return;
     }
 
     setFile(selectedFile);
     setError(null);
     setDatasetName(selectedFile.name.replace('.csv', ''));
+    toast.success(`File selected: ${selectedFile.name}`);
   };
 
   const handleUpload = async () => {
     if (!file || !user || !datasetName.trim()) {
-      setError('Please select a file and enter a dataset name');
+      toast.error('Please select a file and enter a dataset name');
       return;
     }
 
@@ -76,6 +78,8 @@ export default function UploadPage() {
     setError(null);
 
     try {
+      toast.loading('Preparing upload...');
+
       // Ensure user profile exists before uploading
       const { data: existingProfile } = await supabase
         .from('profiles')
@@ -99,7 +103,7 @@ export default function UploadPage() {
       const lines = fileContent.split('\n').filter(line => line.trim());
 
       if (lines.length < 2) {
-        setError('CSV file must have at least a header and one data row');
+        toast.error('CSV file must have at least a header and one data row');
         setUploading(false);
         return;
       }
@@ -115,10 +119,12 @@ export default function UploadPage() {
       const hasAmount = headers.some(h => h.includes('amount'));
 
       if (!hasDate || !hasAmount) {
-        setError('CSV must contain "date" and "amount" columns');
+        toast.error('CSV must contain "date" and "amount" columns');
         setUploading(false);
         return;
       }
+
+      toast.loading(`Creating dataset "${datasetName}"...`);
 
       // Create dataset record
       const { data: dataset, error: datasetError } = await supabase
@@ -160,10 +166,12 @@ export default function UploadPage() {
         .filter(Boolean);
 
       if (transactions.length === 0) {
-        setError('No valid transactions found in CSV');
+        toast.error('No valid transactions found in CSV');
         setUploading(false);
         return;
       }
+
+      toast.loading('Inserting transactions...');
 
       const { error: txError } = await supabase
         .from('transactions')
@@ -175,11 +183,14 @@ export default function UploadPage() {
       }
 
       setProgress(100);
+      toast.success(`Successfully uploaded ${transactions.length} transactions!`);
       setTimeout(() => {
         router.push('/dashboard/transactions');
-      }, 1000);
+      }, 1500);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Upload failed');
+      const errorMsg = err instanceof Error ? err.message : 'Upload failed';
+      setError(errorMsg);
+      toast.error(errorMsg);
     } finally {
       setUploading(false);
     }

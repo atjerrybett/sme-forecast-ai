@@ -3,8 +3,10 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useTheme } from 'next-themes';
 import { supabase } from '@/lib/supabase';
 import { useProtectedRoute } from '@/lib/useProtectedRoute';
+import { Moon, Sun, LogOut } from 'lucide-react';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -12,6 +14,7 @@ interface DashboardLayoutProps {
 
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const router = useRouter();
+  const { theme, setTheme } = useTheme();
   const { isLoading, user } = useProtectedRoute();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
@@ -111,10 +114,20 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             {userMenuOpen && sidebarOpen && (
               <div className="absolute bottom-full left-0 right-0 mb-2 rounded-lg border border-gray-200 bg-white py-2 shadow-lg">
                 <button
-                  onClick={handleSignOut}
-                  className="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
+                  onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                  className="flex w-full items-center gap-3 px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
                 >
-                  Sign Out
+                  {theme === 'dark' ? (
+                    <><Sun className="w-4 h-4" /> Light Mode</>
+                  ) : (
+                    <><Moon className="w-4 h-4" /> Dark Mode</>
+                  )}
+                </button>
+                <button
+                  onClick={handleSignOut}
+                  className="flex w-full items-center gap-3 px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50"
+                >
+                  <LogOut className="w-4 h-4" /> Sign Out
                 </button>
               </div>
             )}

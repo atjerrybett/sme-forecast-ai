@@ -33,9 +33,25 @@ export default function SignUp() {
       return;
     }
 
-    // 2. (Optional) Auto sign-in after sign-up – many apps do this
+    // 2. Create profile in the profiles table
     if (signUpData.user) {
-      // You can also force sign in right away:
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .insert([
+          {
+            id: signUpData.user.id,
+            full_name: fullName,
+          },
+        ]);
+
+      if (profileError) {
+        console.error('Profile creation error:', profileError);
+        setError('Failed to create profile. Please try again.');
+        setLoading(false);
+        return;
+      }
+
+      // 3. Auto sign-in after sign-up
       const { error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password,

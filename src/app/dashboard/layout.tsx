@@ -63,6 +63,12 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             sidebarOpen={sidebarOpen}
           />
           <NavLink
+            href="/dashboard/datasets"
+            icon="📁"
+            label="Datasets"
+            sidebarOpen={sidebarOpen}
+          />
+          <NavLink
             href="/dashboard/upload"
             icon="📤"
             label="Upload Data"

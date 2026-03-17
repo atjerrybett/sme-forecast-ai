@@ -112,7 +112,12 @@ export default function UploadPage() {
         .select()
         .single();
 
-      if (datasetError) throw datasetError;
+      if (datasetError) {
+        console.error('Dataset creation error:', datasetError);
+        throw new Error(`Failed to create dataset: ${datasetError.message}`);
+      }
+
+      console.log('Dataset created:', dataset);
 
       // Insert transactions
       const transactions = rows
@@ -224,7 +229,7 @@ export default function UploadPage() {
               value={datasetName}
               onChange={(e) => setDatasetName(e.target.value)}
               placeholder="e.g., Q1 2024 Transactions"
-              className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-blue-500 focus:ring-blue-500"
+              className="w-full rounded-lg border border-gray-300 px-4 py-2 text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:ring-blue-500"
             />
           </div>
         )}

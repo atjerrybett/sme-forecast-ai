@@ -5,12 +5,18 @@ import { supabase } from '@/lib/supabase';
 import { useProtectedRoute } from '@/lib/useProtectedRoute';
 import { formatCurrency } from '@/lib/utils';
 import Link from 'next/link';
+import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
+import { TrendingUp, TrendingDown, DollarSign, Activity, Target } from 'lucide-react';
 
 interface DashboardStats {
+  totalIncome: number;
+  totalExpenses: number;
+  netProfit: number;
+  averageDailyRevenue: number;
   totalTransactions: number;
-  totalAmount: number;
-  averageTransaction: number;
   lastDataset: string | null;
+  categoryBreakdown: Array<{ name: string; value: number }>;
+  topExpenses: Array<{ name: string; value: number }>;
 }
 
 export default function Dashboard() {
@@ -23,45 +29,73 @@ export default function Dashboard() {
 
     const fetchStats = async () => {
       try {
-        // Get user's datasets first
+        // Get user's datasets
         const { data: userDatasets, error: datasetsError } = await supabase
           .from('datasets')
-          .select('id')
+          .select('id, uploaded_at')
           .eq('user_id', user.id);
 
         if (datasetsError) throw datasetsError;
 
         const datasetIds = userDatasets?.map(d => d.id) || [];
 
-        // Get transaction statistics for user's datasets
-        let transactions: any[] = [];
+        // Get all transactions
+        interface Transaction {
+          amount: number;
+          category: string | null;
+          date: string;
+        }
+        let transactions: Transaction[] = [];
         if (datasetIds.length > 0) {
           const { data, error } = await supabase
             .from('transactions')
-            .select('amount')
+            .select('amount, category, date')
             .in('dataset_id', datasetIds);
 
           if (error) throw error;
-          transactions = data || [];
+          transactions = (data as Transaction[]) || [];
         }
 
-        const amounts = transactions.map(t => t.amount) || [];
-        const total = amounts.reduce((a, b) => a + b, 0);
-        const average = amounts.length > 0 ? total / amounts.length : 0;
+        // Calculate statistics
+        const income = transactions.filter(t => t.amount > 0).reduce((a, b) => a + b.amount, 0);
+        const expenses = Math.abs(transactions.filter(t => t.amount < 0).reduce((a, b) => a + b.amount, 0));
+        const netProfit = income - expenses;
+
+        // Calculate average daily revenue
+        const uniqueDates = new Set(transactions.map(t => t.date));
+        const avgDaily = uniqueDates.size > 0 ? income / uniqueDates.size : 0;
+
+        // Category breakdown
+        const categoryMap = new Map<string, number>();
+        transactions.forEach(t => {
+          const cat = t.category || 'Other';
+          categoryMap.set(cat, (categoryMap.get(cat) || 0) + Math.abs(t.amount));
+        });
+
+        const categoryBreakdown = Array.from(categoryMap.entries())
+          .map(([name, value]) => ({ name, value }))
+          .sort((a, b) => b.value - a.value);
+
+        // Top expense categories
+        const topExpenses = categoryBreakdown.slice(0, 5);
 
         // Get latest dataset
         const { data: datasets } = await supabase
           .from('datasets')
-          .select('name, uploaded_at')
+          .select('name')
           .eq('user_id', user.id)
           .order('uploaded_at', { ascending: false })
           .limit(1);
 
         setStats({
-          totalTransactions: amounts.length,
-          totalAmount: total,
-          averageTransaction: average,
+          totalIncome: income,
+          totalExpenses: expenses,
+          netProfit: netProfit,
+          averageDailyRevenue: avgDaily,
+          totalTransactions: transactions.length,
           lastDataset: datasets?.[0]?.name || null,
+          categoryBreakdown,
+          topExpenses,
         });
       } catch (error) {
         console.error('Error fetching stats:', error);
@@ -82,104 +116,179 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="p-8">
+    <div className="p-8 bg-gray-50 min-h-screen">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Welcome to ForecastFlow</h1>
+        <h1 className="text-4xl font-bold text-gray-900">Dashboard</h1>
         <p className="mt-2 text-gray-600">
-          {user?.email && `Logged in as ${user.email}`}
+          Financial insights and forecasts for your business
         </p>
       </div>
 
-      {/* Quick Start */}
+      {/* No Data State */}
       {!stats?.lastDataset && (
         <div className="mb-8 rounded-lg border-l-4 border-blue-600 bg-blue-50 p-6">
           <h2 className="text-lg font-semibold text-blue-900">Get Started</h2>
           <p className="mt-2 text-blue-800">
-            Upload your first financial dataset to see insights and forecasts.
+            Upload your first CSV file to see analytics and forecasts.
           </p>
           <Link
             href="/dashboard/upload"
-            className="mt-4 inline-block rounded-lg bg-blue-600 px-6 py-2 text-white hover:bg-blue-700"
+            className="mt-4 inline-block rounded-lg bg-blue-600 px-6 py-2 text-white hover:bg-blue-700 transition"
           >
             Upload Data
           </Link>
         </div>
       )}
 
-      {/* Stats Grid */}
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-8">
-        <StatCard
-          label="Total Transactions"
-          value={stats?.totalTransactions || 0}
-          icon="📊"
-        />
-        <StatCard
-          label="Total Amount"
-          value={formatCurrency(stats?.totalAmount || 0)}
-          icon="💰"
-          isFormatted
-        />
-        <StatCard
-          label="Average Transaction"
-          value={formatCurrency(stats?.averageTransaction || 0)}
-          icon="📈"
-          isFormatted
-        />
-        <StatCard
-          label="Last Upload"
-          value={stats?.lastDataset || 'No data yet'}
-          icon="📅"
-          isFormatted
-        />
-      </div>
+      {/* Main Stats Cards */}
+      {stats && (
+        <>
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-8">
+            <StatCard
+              label="Total Income"
+              value={formatCurrency(stats.totalIncome)}
+              icon={<TrendingUp className="w-8 h-8 text-green-500" />}
+              color="green"
+            />
+            <StatCard
+              label="Total Expenses"
+              value={formatCurrency(stats.totalExpenses)}
+              icon={<TrendingDown className="w-8 h-8 text-red-500" />}
+              color="red"
+            />
+            <StatCard
+              label="Net Profit"
+              value={formatCurrency(stats.netProfit)}
+              icon={<DollarSign className="w-8 h-8 text-blue-500" />}
+              color={stats.netProfit >= 0 ? 'blue' : 'red'}
+            />
+            <StatCard
+              label="Avg Daily Revenue"
+              value={formatCurrency(stats.averageDailyRevenue)}
+              icon={<Activity className="w-8 h-8 text-purple-500" />}
+              color="purple"
+            />
+          </div>
 
-      {/* Quick Actions */}
-      <div className="rounded-lg border border-gray-200 bg-white p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h2>
-        <div className="grid gap-4 md:grid-cols-3">
-          <ActionButton
-            label="Upload Data"
-            description="Add new financial data"
-            href="/dashboard/upload"
-            icon="📤"
-          />
-          <ActionButton
-            label="View Transactions"
-            description="Browse all records"
-            href="/dashboard/transactions"
-            icon="📋"
-          />
-          <ActionButton
-            label="View Forecast"
-            description="See predictions"
-            href="/dashboard/forecast"
-            icon="🔮"
-          />
-        </div>
-      </div>
+          {/* Charts Section */}
+          <div className="grid gap-6 mb-8 lg:grid-cols-2">
+            {/* Category Breakdown Pie Chart */}
+            {stats.categoryBreakdown.length > 0 && (
+              <div className="bg-white rounded-lg border border-gray-200 p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Transaction Breakdown</h3>
+                <ResponsiveContainer width="100%" height={300}>
+                  <PieChart>
+                    <Pie
+                      data={stats.categoryBreakdown}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={({ name, percent = 0 }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                      outerRadius={80}
+                      fill="#8884d8"
+                      dataKey="value"
+                    >
+                      {stats.categoryBreakdown.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip formatter={(value) => formatCurrency(value as number)} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+
+            {/* Top Expenses Bar Chart */}
+            {stats.topExpenses.length > 0 && (
+              <div className="bg-white rounded-lg border border-gray-200 p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Top Categories</h3>
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={stats.topExpenses.map(item => ({ category: item.name, amount: item.value }))}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="category" />
+                    <YAxis />
+                    <Tooltip formatter={(value) => formatCurrency(value as number)} />
+                    <Bar dataKey="amount" fill="#3b82f6" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+          </div>
+
+          {/* Quick Stats */}
+          <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Summary</h3>
+            <div className="grid gap-4 md:grid-cols-3">
+              <div className="border-l-4 border-blue-500 pl-4">
+                <p className="text-sm text-gray-600">Total Transactions</p>
+                <p className="text-2xl font-bold text-gray-900">{stats.totalTransactions}</p>
+              </div>
+              <div className="border-l-4 border-green-500 pl-4">
+                <p className="text-sm text-gray-600">Profit Margin</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {stats.totalIncome > 0 ? ((stats.netProfit / stats.totalIncome) * 100).toFixed(1) : 0}%
+                </p>
+              </div>
+              <div className="border-l-4 border-purple-500 pl-4">
+                <p className="text-sm text-gray-600">Last Dataset</p>
+                <p className="text-2xl font-bold text-gray-900">{stats.lastDataset || 'None'}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Quick Actions */}
+          <div className="mt-8 grid gap-4 md:grid-cols-3">
+            <ActionButton
+              label="Upload Data"
+              description="Add new financial transactions"
+              href="/dashboard/upload"
+              icon={<DollarSign className="w-6 h-6" />}
+            />
+            <ActionButton
+              label="View Transactions"
+              description="Browse and analyze records"
+              href="/dashboard/transactions"
+              icon={<Activity className="w-6 h-6" />}
+            />
+            <ActionButton
+              label="View Forecast"
+              description="See 90-day predictions"
+              href="/dashboard/forecast"
+              icon={<Target className="w-6 h-6" />}
+            />
+          </div>
+        </>
+      )}
     </div>
   );
 }
 
+const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
+
 interface StatCardProps {
   label: string;
-  value: string | number;
-  icon: string;
-  isFormatted?: boolean;
+  value: string;
+  icon: React.ReactNode;
+  color: 'green' | 'red' | 'blue' | 'purple';
 }
 
-function StatCard({ label, value, icon, isFormatted }: StatCardProps) {
+function StatCard({ label, value, icon, color }: StatCardProps) {
+  const bgColor = {
+    green: 'bg-green-50',
+    red: 'bg-red-50',
+    blue: 'bg-blue-50',
+    purple: 'bg-purple-50',
+  }[color];
+
   return (
-    <div className="rounded-lg border border-gray-200 bg-white p-6">
-      <div className="flex items-center justify-between">
+    <div className={`${bgColor} rounded-lg border border-gray-200 p-6`}>
+      <div className="flex items-start justify-between">
         <div>
-          <p className="text-sm text-gray-600">{label}</p>
-          <p className="mt-2 text-2xl font-bold text-gray-900">
-            {typeof value === 'number' && !isFormatted ? value.toLocaleString() : value}
-          </p>
+          <p className="text-sm font-medium text-gray-600">{label}</p>
+          <p className="mt-2 text-2xl font-bold text-gray-900">{value}</p>
         </div>
-        <div className="text-3xl">{icon}</div>
+        {icon}
       </div>
     </div>
   );
@@ -189,19 +298,21 @@ interface ActionButtonProps {
   label: string;
   description: string;
   href: string;
-  icon: string;
+  icon: React.ReactNode;
 }
 
 function ActionButton({ label, description, href, icon }: ActionButtonProps) {
   return (
     <Link
       href={href}
-      className="flex items-start gap-4 rounded-lg border border-gray-200 bg-white p-4 transition-all hover:border-blue-300 hover:shadow-md"
+      className="block rounded-lg border border-gray-200 bg-white p-6 hover:shadow-lg transition hover:border-blue-500"
     >
-      <div className="text-2xl">{icon}</div>
-      <div>
-        <p className="font-semibold text-gray-900">{label}</p>
-        <p className="text-sm text-gray-600">{description}</p>
+      <div className="flex items-start gap-4">
+        <div className="text-blue-600">{icon}</div>
+        <div>
+          <h4 className="font-semibold text-gray-900">{label}</h4>
+          <p className="mt-1 text-sm text-gray-600">{description}</p>
+        </div>
       </div>
     </Link>
   );

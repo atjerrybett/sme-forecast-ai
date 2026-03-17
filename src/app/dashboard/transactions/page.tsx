@@ -30,7 +30,7 @@ export default function TransactionsPage() {
         const datasetIds = userDatasets?.map(d => d.id) || [];
 
         // Get transactions for user's datasets
-        let allTransactions: any[] = [];
+        let allTransactions: Transaction[] = [];
         if (datasetIds.length > 0) {
           const { data, error } = await supabase
             .from('transactions')
@@ -39,7 +39,7 @@ export default function TransactionsPage() {
             .order('date', { ascending: false });
 
           if (error) throw error;
-          allTransactions = data || [];
+          allTransactions = (data as Transaction[]) || [];
         }
 
         setTransactions(allTransactions);

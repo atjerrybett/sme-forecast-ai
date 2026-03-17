@@ -46,9 +46,8 @@ export default function SignUp() {
 
       if (profileError) {
         console.error('Profile creation error:', profileError);
-        setError('Failed to create profile. Please try again.');
-        setLoading(false);
-        return;
+        console.error('Error details:', { code: profileError.code, message: profileError.message });
+        // Continue anyway - we'll create it on first upload if needed
       }
 
       // 3. Auto sign-in after sign-up

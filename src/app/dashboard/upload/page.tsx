@@ -76,6 +76,25 @@ export default function UploadPage() {
     setError(null);
 
     try {
+      // Ensure user profile exists before uploading
+      const { data: existingProfile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('id', user.id)
+        .single();
+
+      if (!existingProfile) {
+        // Create profile if it doesn't exist
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .insert({ id: user.id });
+
+        if (profileError) {
+          console.error('Profile creation error:', profileError);
+          throw new Error('Failed to create user profile. Please sign out and sign in again.');
+        }
+      }
+
       const fileContent = await file.text();
       const lines = fileContent.split('\n').filter(line => line.trim());
 

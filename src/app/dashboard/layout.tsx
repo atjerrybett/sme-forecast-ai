@@ -38,11 +38,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
   return (
     <div className="flex min-h-[calc(100vh-4rem)] bg-slate-50 dark:bg-slate-950">
-      {/* Sidebar */}
+      {/* Sidebar (desktop only) */}
       <aside
-        className={`${
-          sidebarOpen ? 'w-64' : 'w-20'
-        } flex flex-col border-r border-gray-200 bg-gradient-to-b from-white to-slate-50 dark:from-slate-900 dark:to-slate-950 transition-colors duration-300`}
+        className={`${sidebarOpen ? 'w-64' : 'w-20'} hidden md:flex flex-col border-r border-gray-200 bg-gradient-to-b from-white to-slate-50 dark:from-slate-900 dark:to-slate-950 transition-colors duration-300`}
       >
         {/* Logo */}
         <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4">

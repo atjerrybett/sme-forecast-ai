@@ -32,7 +32,7 @@ export default function RootLayout({
         <Providers>
           <SiteHeader />
 
-          <main className="pt-20">{children}</main>
+          <main className="pt-16 md:pt-20">{children}</main>
         </Providers>
       </body>
     </html>

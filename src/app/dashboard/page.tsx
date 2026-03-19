@@ -110,8 +110,9 @@ export default function Dashboard() {
 
   if (isLoading || loading) {
     return (
-      <div className="p-8 bg-slate-50 dark:bg-slate-950 min-h-screen">
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-8">
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
+        <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-8">
           <SkeletonCard />
           <SkeletonCard />
           <SkeletonCard />
@@ -138,11 +139,13 @@ export default function Dashboard() {
           <SkeletonAction />
         </div>
       </div>
-    );
+    </div>
+  );
   }
 
   return (
-    <div className="p-8 bg-slate-50 dark:bg-slate-950 min-h-screen">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
+      <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
       {/* Header */}
       {/* Economic snapshot */}
       <div className="mb-8">
@@ -289,6 +292,7 @@ export default function Dashboard() {
         </>
       )}
     </div>
+  </div>
   );
 }
 

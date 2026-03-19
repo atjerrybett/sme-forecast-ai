@@ -365,7 +365,8 @@ export default function ForecastPage() {
   }
 
   return (
-    <div className="p-8">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
+      <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900">Financial Forecast</h1>
@@ -674,5 +675,6 @@ export default function ForecastPage() {
         </>
       )}
     </div>
+  </div>
   );
 }

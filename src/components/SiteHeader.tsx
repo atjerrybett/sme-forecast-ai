@@ -58,8 +58,8 @@ export function SiteHeader() {
   const showDashboard = !!session?.user;
 
   return (
-    <header className="fixed inset-x-0 top-0 z-30 h-20 border-b border-slate-900/10 bg-white backdrop-blur-xl transition-colors duration-300 dark:bg-slate-950">
-      <div className="mx-auto flex h-full max-w-6xl items-center justify-between px-6">
+      <header className="fixed inset-x-0 top-0 z-30 h-16 md:h-20 border-b border-slate-900/10 bg-white backdrop-blur-xl transition-colors duration-300 dark:bg-slate-950">
+      <div className="mx-auto flex h-full max-w-6xl items-center justify-between px-4 sm:px-6">
         <div className="flex items-center gap-3">
           <Logo className="text-slate-900 dark:text-white" />
           <div className="hidden md:block">

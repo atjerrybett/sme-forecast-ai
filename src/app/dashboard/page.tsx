@@ -1,12 +1,13 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useProtectedRoute } from '@/lib/useProtectedRoute';
 import { formatCurrency } from '@/lib/utils';
 import Link from 'next/link';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
 import { TrendingUp, TrendingDown, DollarSign, Activity, Target } from 'lucide-react';
+import { EconomicWidget } from '@/components/EconomicWidget';
 
 interface DashboardStats {
   totalIncome: number;
@@ -109,20 +110,43 @@ export default function Dashboard() {
 
   if (isLoading || loading) {
     return (
-      <div className="flex h-full items-center justify-center">
-        <div className="h-12 w-12 animate-spin rounded-full border-4 border-gray-300 border-t-blue-600"></div>
+      <div className="p-8 bg-slate-50 dark:bg-slate-950 min-h-screen">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-8">
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
+        </div>
+
+        <div className="grid gap-6 mb-8 lg:grid-cols-2">
+          <SkeletonChart />
+          <SkeletonChart />
+        </div>
+
+        <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <div className="h-6 w-40 rounded bg-gray-200 animate-pulse" />
+          <div className="mt-4 grid gap-4 md:grid-cols-3">
+            <SkeletonStat />
+            <SkeletonStat />
+            <SkeletonStat />
+          </div>
+        </div>
+
+        <div className="mt-8 grid gap-4 md:grid-cols-3">
+          <SkeletonAction />
+          <SkeletonAction />
+          <SkeletonAction />
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="p-8 bg-gray-50 min-h-screen">
+    <div className="p-8 bg-slate-50 dark:bg-slate-950 min-h-screen">
       {/* Header */}
+      {/* Economic snapshot */}
       <div className="mb-8">
-        <h1 className="text-4xl font-bold text-gray-900">Dashboard</h1>
-        <p className="mt-2 text-gray-600">
-          Financial insights and forecasts for your business
-        </p>
+        <EconomicWidget />
       </div>
 
       {/* No Data State */}
@@ -148,24 +172,28 @@ export default function Dashboard() {
             <StatCard
               label="Total Income"
               value={formatCurrency(stats.totalIncome)}
+              valueNumber={stats.totalIncome}
               icon={<TrendingUp className="w-8 h-8 text-green-500" />}
               color="green"
             />
             <StatCard
               label="Total Expenses"
               value={formatCurrency(stats.totalExpenses)}
+              valueNumber={stats.totalExpenses}
               icon={<TrendingDown className="w-8 h-8 text-red-500" />}
               color="red"
             />
             <StatCard
               label="Net Profit"
               value={formatCurrency(stats.netProfit)}
+              valueNumber={stats.netProfit}
               icon={<DollarSign className="w-8 h-8 text-blue-500" />}
               color={stats.netProfit >= 0 ? 'blue' : 'red'}
             />
             <StatCard
               label="Avg Daily Revenue"
               value={formatCurrency(stats.averageDailyRevenue)}
+              valueNumber={stats.averageDailyRevenue}
               icon={<Activity className="w-8 h-8 text-purple-500" />}
               color="purple"
             />
@@ -269,11 +297,49 @@ const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'
 interface StatCardProps {
   label: string;
   value: string;
+  valueNumber?: number;
+  formatValue?: (n: number) => string;
   icon: React.ReactNode;
   color: 'green' | 'red' | 'blue' | 'purple';
 }
 
-function StatCard({ label, value, icon, color }: StatCardProps) {
+function AnimatedNumber({
+  value,
+  format = (n: number) => n.toFixed(0),
+  duration = 700,
+}: {
+  value: number;
+  format?: (n: number) => string;
+  duration?: number;
+}) {
+  const [display, setDisplay] = useState(format(0));
+  const rafRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    const start = performance.now();
+    const startValue = 0;
+    const endValue = value;
+
+    const step = (now: number) => {
+      const progress = Math.min((now - start) / duration, 1);
+      const current = startValue + (endValue - startValue) * progress;
+      setDisplay(format(current));
+      if (progress < 1) {
+        rafRef.current = requestAnimationFrame(step);
+      }
+    };
+
+    rafRef.current = requestAnimationFrame(step);
+
+    return () => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    };
+  }, [value, format, duration]);
+
+  return <>{display}</>;
+}
+
+function StatCard({ label, value, valueNumber, formatValue, icon, color }: StatCardProps) {
   const bgColor = {
     green: 'bg-green-50',
     red: 'bg-red-50',
@@ -282,11 +348,17 @@ function StatCard({ label, value, icon, color }: StatCardProps) {
   }[color];
 
   return (
-    <div className={`${bgColor} rounded-lg border border-gray-200 p-6`}>
+    <div className={`${bgColor} rounded-lg border border-gray-200 p-6 shadow-sm transition hover:shadow-lg hover:border-blue-300`}>
       <div className="flex items-start justify-between">
         <div>
           <p className="text-sm font-medium text-gray-600">{label}</p>
-          <p className="mt-2 text-2xl font-bold text-gray-900">{value}</p>
+          <p className="mt-2 text-2xl font-bold text-gray-900">
+            {valueNumber != null ? (
+              <AnimatedNumber value={valueNumber} format={formatValue ?? ((n) => formatCurrency(n))} />
+            ) : (
+              value
+            )}
+          </p>
         </div>
         {icon}
       </div>
@@ -315,5 +387,29 @@ function ActionButton({ label, description, href, icon }: ActionButtonProps) {
         </div>
       </div>
     </Link>
+  );
+}
+
+function SkeletonCard() {
+  return (
+    <div className="h-32 rounded-lg border border-gray-200 bg-white p-6 shadow-sm animate-pulse" />
+  );
+}
+
+function SkeletonChart() {
+  return (
+    <div className="h-72 rounded-lg border border-gray-200 bg-white p-6 shadow-sm animate-pulse" />
+  );
+}
+
+function SkeletonStat() {
+  return (
+    <div className="h-20 rounded-lg bg-gray-100 p-4 shadow-sm animate-pulse" />
+  );
+}
+
+function SkeletonAction() {
+  return (
+    <div className="h-28 rounded-lg border border-gray-200 bg-white p-6 shadow-sm animate-pulse" />
   );
 }

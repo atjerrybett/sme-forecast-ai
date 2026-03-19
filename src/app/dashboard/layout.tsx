@@ -2,11 +2,12 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useTheme } from 'next-themes';
 import { supabase } from '@/lib/supabase';
 import { useProtectedRoute } from '@/lib/useProtectedRoute';
-import { Moon, Sun, LogOut } from 'lucide-react';
+import { Moon, Sun, LogOut, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Logo } from '@/components/Logo';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -36,24 +37,26 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   }
 
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="flex min-h-[calc(100vh-4rem)] bg-slate-50 dark:bg-slate-950">
       {/* Sidebar */}
       <aside
         className={`${
           sidebarOpen ? 'w-64' : 'w-20'
-        } flex flex-col border-r border-gray-200 bg-white transition-all duration-300`}
+        } flex flex-col border-r border-gray-200 bg-gradient-to-b from-white to-slate-50 dark:from-slate-900 dark:to-slate-950 transition-colors duration-300`}
       >
         {/* Logo */}
         <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4">
-          <Link href="/dashboard" className="text-xl font-bold text-blue-600">
-            {sidebarOpen && 'ForecastFlow'}
-            {!sidebarOpen && 'FF'}
-          </Link>
+          <Logo href="/dashboard" showText={sidebarOpen} compact={!sidebarOpen} className="text-blue-600" />
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="rounded-lg p-1 hover:bg-gray-100"
+            className="rounded-lg p-2 text-gray-600 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            aria-label={sidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'}
           >
-            {sidebarOpen ? '←' : '→'}
+            {sidebarOpen ? (
+              <ChevronLeft className="h-4 w-4" />
+            ) : (
+              <ChevronRight className="h-4 w-4" />
+            )}
           </button>
         </div>
 
@@ -151,10 +154,19 @@ interface NavLinkProps {
 }
 
 function NavLink({ href, icon, label, sidebarOpen }: NavLinkProps) {
+  const pathname = usePathname();
+  const active = pathname === href || pathname?.startsWith(href);
+
   return (
     <Link
       href={href}
-      className="flex items-center gap-3 rounded-lg px-4 py-2 text-gray-700 transition-colors hover:bg-blue-50 hover:text-blue-600"
+      title={!sidebarOpen ? label : undefined}
+      className={`flex items-center gap-3 rounded-lg px-4 py-2 transition-colors ${
+        active
+          ? 'bg-blue-50 text-blue-700 dark:bg-slate-800 dark:text-blue-300'
+          : 'text-slate-800 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-200 dark:hover:bg-slate-800 dark:hover:text-white'
+      }`}
+      aria-current={active ? 'page' : undefined}
     >
       <span className="text-xl">{icon}</span>
       {sidebarOpen && <span className="text-sm font-medium">{label}</span>}

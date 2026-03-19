@@ -1,6 +1,8 @@
 'use client';
 
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { Logo } from '@/components/Logo';
 
 export default function Home() {
   const router = useRouter();
@@ -8,19 +10,18 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 text-white">
       {/* Navigation */}
-      <nav className="flex items-center justify-between px-6 sm:px-8 lg:px-12 py-6 border-b border-slate-700/50">
+      <header className="flex items-center justify-between px-6 sm:px-8 lg:px-12 py-6 border-b border-slate-700/50">
         <div className="flex items-center gap-3">
-          <div className="flex items-center justify-center w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg">
-            <span className="text-xl font-black">📊</span>
-          </div>
-          <h1 className="text-2xl font-black bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">
-            ForecastFlow
-          </h1>
+          <Logo className="text-white" />
+          <p className="text-sm text-gray-300">AI Forecasting for SMEs</p>
         </div>
         <div className="flex items-center gap-4">
-          <a href="/auth/signin" className="px-6 py-2 text-sm font-semibold text-gray-300 hover:text-white transition-colors">
+          <Link
+            href="/auth/signin"
+            className="px-6 py-2 text-sm font-semibold text-gray-300 hover:text-white transition-colors"
+          >
             Sign In
-          </a>
+          </Link>
           <button
             onClick={() => router.push('/auth/signup')}
             className="px-6 py-2 text-sm font-bold rounded-lg bg-blue-600 hover:bg-blue-700 transition-colors"
@@ -28,7 +29,7 @@ export default function Home() {
             Get Started
           </button>
         </div>
-      </nav>
+      </header>
 
       {/* Hero Section */}
       <div className="relative overflow-hidden">
@@ -134,6 +135,56 @@ export default function Home() {
               <div key={idx} className="bg-slate-700/50 border border-slate-600/50 rounded-xl p-6 hover:border-blue-500/50 transition-colors">
                 <h4 className="text-xl font-bold mb-2 text-blue-400">{feature.title}</h4>
                 <p className="text-gray-400">{feature.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Pricing Section */}
+      <section className="bg-slate-900 border-t border-slate-700/50 py-20 sm:py-32">
+        <div className="max-w-6xl mx-auto px-6 sm:px-8 lg:px-12">
+          <h3 className="text-4xl font-black text-center mb-16">
+            <span className="bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">
+              Simple Pricing in KES
+            </span>
+          </h3>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {[
+              { name: 'Starter', price: 'KSh 2,500', period: '/month', features: ['Basic forecasting', '5 data sources', 'Email support'] },
+              { name: 'Professional', price: 'KSh 7,500', period: '/month', features: ['Advanced AI models', 'Unlimited data sources', 'Priority support'], popular: true },
+              { name: 'Enterprise', price: 'KSh 15,000', period: '/month', features: ['Custom AI training', 'API access', 'Dedicated account manager'] },
+            ].map((plan, idx) => (
+              <div key={idx} className={`bg-slate-800 border rounded-xl p-8 ${plan.popular ? 'border-blue-500 ring-2 ring-blue-500/50' : 'border-slate-600/50'} relative`}>
+                {plan.popular && (
+                  <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 bg-blue-600 text-white px-4 py-1 rounded-full text-sm font-bold">
+                    Most Popular
+                  </div>
+                )}
+                <h4 className="text-2xl font-bold mb-4">{plan.name}</h4>
+                <div className="mb-6">
+                  <span className="text-4xl font-black">{plan.price}</span>
+                  <span className="text-gray-400">{plan.period}</span>
+                </div>
+                <ul className="space-y-2 mb-8">
+                  {plan.features.map((feature, fidx) => (
+                    <li key={fidx} className="flex items-center text-gray-300">
+                      <span className="text-green-400 mr-2">✓</span>
+                      {feature}
+                    </li>
+                  ))}
+                </ul>
+                <button
+                  onClick={() => router.push('/auth/signup')}
+                  className={`w-full py-3 px-4 rounded-lg font-bold transition-all duration-200 ${
+                    plan.popular
+                      ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                      : 'bg-slate-700 hover:bg-slate-600 text-white'
+                  }`}
+                >
+                  Get Started
+                </button>
               </div>
             ))}
           </div>

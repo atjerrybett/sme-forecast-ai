@@ -1,8 +1,10 @@
 'use client';
 
+import Link from 'next/link';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
+import { Logo } from '@/components/Logo';
 
 export default function SignUp() {
   const router = useRouter();
@@ -66,13 +68,8 @@ export default function SignUp() {
       <div className="w-full max-w-md space-y-8 p-6 sm:p-8 bg-white rounded-2xl shadow-2xl">
         
         {/* Modern Logo & ForecastFlow Header */}
-        <div className="flex flex-col items-center space-y-6">
-          <div className="relative">
-            <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-2xl blur-xl opacity-50"></div>
-            <div className="relative flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-600 via-blue-500 to-indigo-600 rounded-2xl shadow-2xl">
-              <span className="text-3xl font-black">📊</span>
-            </div>
-          </div>
+        <div className="flex flex-col items-center space-y-4">
+          <Logo className="mx-auto" />
 
           <div className="text-center space-y-2">
             <h1 className="text-4xl sm:text-5xl font-black tracking-tight">
@@ -163,12 +160,12 @@ export default function SignUp() {
         <div className="text-center pt-4 border-t border-gray-200">
           <p className="text-sm text-gray-600">
             Already have an account?{' '}
-            <a 
-              href="/auth/signin" 
-              className="font-bold text-blue-600 hover:text-blue-700 active:text-blue-800 transition-colors duration-200 underline decoration-2 underline-offset-2"
-            >
-              Sign in here
-            </a>
+            <Link
+            href="/auth/signin"
+            className="font-bold text-blue-600 hover:text-blue-700 active:text-blue-800 transition-colors duration-200 underline decoration-2 underline-offset-2"
+          >
+            Sign in here
+          </Link>
           </p>
         </div>
       </div>
